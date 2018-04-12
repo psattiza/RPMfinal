@@ -33,26 +33,26 @@ for current in ["s1", "f2", "s2"]:
 
 #DO ONLY SEMESTERS THAT HAPPENED BEFORE. BEFORE MATRIX TO KEEP TRACK, CREATE OR FOR BOTH PREREQS AND COURSE ITSELF
 
-		& course("math112", current).Implies(And(course("math111", before), Not(course("math112", before))))
+		& course("math112", current).Iff(And(course("math111", before), Not(course("math112", before))))
 
-		& course("phgn100", current).Implies(And(course("math111", before), Not(course("phgn100", before))))
+		& course("phgn100", current).Iff(And(course("math111", before), Not(course("phgn100", before))))
 
-		& course("epic151", current).Implies(And(Not(course("epic151", before))))
+		& course("epic151", current).Iff(And(Not(course("epic151", before))))
 
 
-		& course("pagn103", current).Implies(And(Not(course("pagn103", before))))
+		& course("pagn103", current).Iff(And(Not(course("pagn103", before))))
 
-		& course("ebgn201", current).Implies(And(Not(course("ebgn201", before))))
+		& course("ebgn201", current).Iff(And(Not(course("ebgn201", before))))
 
-		& course("math111", current).Implies(And(Not(course("math111", before))))
+		& course("math111", current).Iff(And(Not(course("math111", before))))
 
-		& course("csm101", current).Implies(And(Not(course("csm101", before))))
+		& course("csm101", current).Iff(And(Not(course("csm101", before))))
 
-		& course("chgn121", current).Implies(And(Not(course("chgn121", before))))
+		& course("chgn121", current).Iff(And(Not(course("chgn121", before))))
 
-		& course("csci101", current).Implies(And(Not(course("csci101", before))))
+		& course("csci101", current).Iff(And(Not(course("csci101", before))))
 
-		& course("pagn102", current).Implies(And(Not(course("pagn102", before))))
+		& course("pagn102", current).Iff(And(Not(course("pagn102", before))))
 	)	
 
 
