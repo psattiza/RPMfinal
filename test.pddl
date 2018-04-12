@@ -1,0 +1,6 @@
+(define (problem test)
+  (:domain courses)
+  (:objects f14 s15)
+  (:init )
+  (:goal (and (taken LAIS100) (taken MATH111) (taken PHGN100) (taken CSM101) (taken CHGN121) (taken CSCI261) (taken CSCI262) (taken CSCI101)))
+)

@@ -1,0 +1,5 @@
+(define (problem test)
+  (:domain courses)
+  (:init )
+  (:goal (and (taken CSM101) ))
+)
