@@ -3,7 +3,7 @@ from pysmt.typing import INT, REAL
 import random
 
 def course (name, semester):
-	return Symbol("taken_%s_%d" % (name, semester), INT)
+	return Symbol("taken_%s_%d" % (name, semester), REAL)
 courses = ["epic151", "ebgn201", "math111", "csci101",
  "csm101", "math112", "phgn100", "csci261", "csci262", "math201",
  "math213", "csci341", "phgn200", "chgn121", "csci403",
@@ -35,14 +35,19 @@ credit_hours = {
 	"csci306": 3,
 }
 
+all_credit_hours = credit_hours
+for arr in electives:
+	for c in arr[2:]:
+		all_credit_hours[c] = arr[1]
+print all_credit_hours
 total_credit_hours = 0
 for c in credit_hours.keys():
 	total_credit_hours += credit_hours[c]
 for e in electives:
 	total_credit_hours += (e[0]*e[1])
 split = total_credit_hours / 8
-min_credit_hours = 2#floor(2) + 0.5
-max_credit_hours = 3#min_credit_hours + 1
+min_credit_hours = 6.0#floor(2) + 0.5
+max_credit_hours = 10.5#min_credit_hours + 1
 
 
 map_semester_to_number = {
@@ -58,7 +63,7 @@ map_semester_to_number = {
 
 fall = ["csci445"] #list of fall
 spring = ["csci404", "pagn102"] #list of spring
-other = { #hash table pointing to array of right semester
+other = { #hash table poRealing to array of right semester
 	"csci440": ["f2", "f3", "s4"],
 	"csci446": ["s1", "s4"]
 }
@@ -102,17 +107,20 @@ facts = TRUE()
 
 #Range for classes, only one class per schedule
 num_semesters = [0, 1, 2, 3, 4, 5, 6, 7]
-always_range = And([Or(Equals(course(c, b), Int(0)), Equals(course(c, b), Int(1))) for c in all_courses for b in num_semesters])
+always_range = And([Or(Equals(course(c, b), Real(0)), Equals(course(c, b), Real(1))) for c in all_courses for b in num_semesters])
 
 #Required classes need at least one class
-all_classes = And([Equals(Plus([course(c, b) for b in num_semesters]), Int(1)) for c in courses])
+all_classes = And([Equals(Plus([course(c, b) for b in num_semesters]), Real(1)) for c in courses])
 
 #credit hours things
-all_semester = And([And(GE(Plus([course(c, b) for c in courses]), Int(2)), LE(Plus([course(c, b) for c in all_courses]), Int(3))) for b in num_semesters])
-#
-#$all_semester_hours = And([And(GE(Plus([Times(course(c, b), Real(credit_hours[c])) for c in courses]), Real(8.0)),
-#	LE(Plus([Times(course(c, b), Real(credit_hours[c])) for c in all_courses]), Real(9.0))) for b in num_semesters])
+#based on number of classes
+all_semester = And([And(GE(Plus([course(c, b) for c in all_courses]), Real(2)), LE(Plus([course(c, b) for c in all_courses]), Real(3))) for b in num_semesters])
 
+#based on credit hours
+all_semester_hours = And([And(GE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in courses]), Real(min_credit_hours)),
+	LE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(max_credit_hours))) for b in num_semesters])
+
+#print all_semester_hours
 
 #prereqs
 befores = {
@@ -126,35 +134,35 @@ befores = {
 }
 
 #Can't be on first step, each prereq and coreq created
-prereqs_init = And([(Equals(course(c, 0), Int(0))) for c in prereqs])
-prereqs_only = And([And([Equals(course(c, b), Int(1)).Implies(And([Equals(Plus([course(cp, be) for be in befores[b]]), Int(1)) for cp in prereqs[c]]))
+prereqs_init = And([(Equals(course(c, 0), Real(0))) for c in prereqs])
+prereqs_only = And([And([Equals(course(c, b), Real(1)).Implies(And([Equals(Plus([course(cp, be) for be in befores[b]]), Real(1)) for cp in prereqs[c]]))
  	for b in num_semesters[1:]]) for c in prereqs])
 
-coreqs_only = And([And([Equals(course(c, b), Int(1)).Implies(
-(And([Or(Equals(course(cc, b), Int(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Int(1)))) for cc in coreqs[c]])) )
+coreqs_only = And([And([Equals(course(c, b), Real(1)).Implies(
+(And([Or(Equals(course(cc, b), Real(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Real(1)))) for cc in coreqs[c]])) )
 for b in num_semesters[1:]]) for c in coreqs])
 
 #electives
 electives_courses = And([Equals(Plus([course(c, b) for c in electives[i][2:]
-for b in num_semesters]), Int(a[0])) for i, a in enumerate(electives)])
+for b in num_semesters]), Real(a[0])) for i, a in enumerate(electives)])
 
 #At most electives can have one class in the schedule
-restrict_electives = And([And([LE(Plus([course(c, b) for b in num_semesters]), Int(1))
+restrict_electives = And([And([LE(Plus([course(c, b) for b in num_semesters]), Real(1))
 	for c in electives[i][2:]]) for i, a in enumerate(electives)])
 
 
 #Scheduling constraints
-csm101 = Equals(course("csm101", 0), Int(1))
+csm101 = Equals(course("csm101", 0), Real(1))
 
 valid_falls=[0, 2, 4, 6]
 valid_springs=[1, 3, 5, 7]
-fall_courses = And([And([Equals(course(c, b), Int(1)).Implies(Or([Equals(Int(b), Int(f))
+fall_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(f))
 	for f in valid_falls])) for b in num_semesters]) for c in fall])
 
-spring_courses = And([And([Equals(course(c, b), Int(1)).Implies(Or([Equals(Int(b), Int(s))
+spring_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(s))
 	for s in valid_springs])) for b in num_semesters]) for c in spring])
 
-other_courses = And([And([Equals(course(c, b), Int(1)).Implies(Or([Equals(Int(b), Int(map_semester_to_number[s]))
+other_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(map_semester_to_number[s]))
 	for s in other[c]])) for b in num_semesters]) for c in other.keys()])
 
 facts_domain = (facts
@@ -162,7 +170,7 @@ facts_domain = (facts
 
 		& always_range
 
-		& all_semester
+		& all_semester_hours
 
 		& all_classes
 
