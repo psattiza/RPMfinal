@@ -20,7 +20,7 @@ def readPreCoReq(filename):
                     prereqs[course] = line[2+1:2+1+numPreReqs]
                 numCoReqs = int(line[2+1+numPreReqs])
                 if(numCoReqs !=0):
-                    coreqs[course] = line[2+1+numPreReqs:2+1+numPreReqs+numCoReqs]
+                    coreqs[course] = line[2+1+numPreReqs+1:2+1+numPreReqs+numCoReqs+1]
             except ValueError:
                 print("Line #{} not formatted like [title,numCredits (float), numPrereqs,..., numCoReqs, ...] make sure you include zeros".format(line))
                 return 0
@@ -60,4 +60,4 @@ def readCirriculum(filename):
    
 
 print readCirriculum("cirriculum.csv")
-#print readPreCoReq("constraints.csv")
+print readPreCoReq("constraints.csv")
