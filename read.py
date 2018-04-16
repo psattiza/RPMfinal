@@ -39,7 +39,7 @@ def readCirriculum(filename):
         i=1
         reader = csv.reader(f)
         for line in reader:
-            print line
+            #print line
             name = line[0]
             try:
                 numRequired = int(line[1])
@@ -58,6 +58,6 @@ def readCirriculum(filename):
     except IOError:
         print("File: %s, not found" % filename)
    
-
-print readCirriculum("cirriculum.csv")
-print readPreCoReq("constraints.csv")
+if __name__ == '__main__':
+	print readCirriculum("cirriculum.csv")
+	print readPreCoReq("constraints.csv")

@@ -1,20 +1,32 @@
 from pysmt.shortcuts import Symbol, LE, GE, And, Int, Or, Iff, Implies, ExactlyOne, FALSE, TRUE, Not, get_model, get_unsat_core, is_sat, is_unsat, Plus, Equals, Real, Times
 from pysmt.typing import INT, REAL
 import random
+import read as r
 
 def course (name, semester):
 	return Symbol("taken_%s_%d" % (name, semester), REAL)
-courses = ["epic151", "ebgn201", "math111", "csci101",
- "csm101", "math112", "phgn100", "csci261", "csci262", "math201",
- "math213", "csci341", "phgn200", "chgn121", "csci403",
- "csci400", "csci306"]
 
+every_course, credit_hours, prereqs, coreqs = r.readPreCoReq("constraints.csv")
+required, electives_names = r.readCirriculum("cirriculum.csv")
+'''
+courses = ["EPIC151", "EBGN201", "MATH111", "CSCI101",
+ "CSM101", "MATH112", "PHGN100", "CSCI261", "CSCI262", "MATH201",
+ "MATH213", "CSCI341", "PHGN200", "CHGN121", "CSCI403",
+ "CSCI400", "CSCI306"]
+'''
+courses = required
+
+electives = []
+for e in electives_names:
+	electives.append(e[1:])
+'''
 electives = [
-  [1, 4, "chgn122", "cben110", "chgn125", "gegn101"],
-  [2, 0.5, "pagn201", "pagn102", "pagn207", "pagn210"],
-  [3, 3, "csci404", "csci440", "csci446", "csci445"]
+  [1, 4, "CHGN122", "CBEN110", "CHGN125", "GEGN101"],
+  [2, 0.5, "PAGN201", "PAGN102", "PAGN207", "PAGN210"],
+  [3, 3, "CSCI404", "CSCI440", "CSCI446", "CSCI445"]
 ]
-
+'''
+'''
 credit_hours = {
 	"epic151": 3,
 	"ebgn201": 3,
@@ -34,20 +46,21 @@ credit_hours = {
 	"csci400": 3,
 	"csci306": 3,
 }
+'''
 
 all_credit_hours = credit_hours
 for arr in electives:
 	for c in arr[2:]:
-		all_credit_hours[c] = arr[1]
-print all_credit_hours
+		if c not in all_credit_hours:
+			all_credit_hours[c] = arr[1]
 total_credit_hours = 0
 for c in credit_hours.keys():
 	total_credit_hours += credit_hours[c]
 for e in electives:
 	total_credit_hours += (e[0]*e[1])
 split = total_credit_hours / 8
-min_credit_hours = 6.0#floor(2) + 0.5
-max_credit_hours = 10.5#min_credit_hours + 1
+min_credit_hours = 12.0#floor(2) + 0.5
+max_credit_hours = 19.0#min_credit_hours + 1
 
 
 map_semester_to_number = {
@@ -76,6 +89,7 @@ for co in electives:
 		all_courses.append(c)
 
 #Need this in this format
+'''
 prereqs = {
    "math112": ["math111"],
    "phgn100": ["math111"],
@@ -102,25 +116,26 @@ coreqs = {
 	"csci445": ["csci403"],
 	"csci446": ["csci400"]
 }
-
+'''
 facts = TRUE()
 
 #Range for classes, only one class per schedule
 num_semesters = [0, 1, 2, 3, 4, 5, 6, 7]
+print "Determining range for all classes"
 always_range = And([Or(Equals(course(c, b), Real(0)), Equals(course(c, b), Real(1))) for c in all_courses for b in num_semesters])
 
+print "Logic for required classes"
 #Required classes need at least one class
 all_classes = And([Equals(Plus([course(c, b) for b in num_semesters]), Real(1)) for c in courses])
 
 #credit hours things
 #based on number of classes
+print "Logic for credit hours"
 all_semester = And([And(GE(Plus([course(c, b) for c in all_courses]), Real(2)), LE(Plus([course(c, b) for c in all_courses]), Real(3))) for b in num_semesters])
 
 #based on credit hours
-all_semester_hours = And([And(GE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in courses]), Real(min_credit_hours)),
+all_semester_hours = And([And(GE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(min_credit_hours)),
 	LE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(max_credit_hours))) for b in num_semesters])
-
-#print all_semester_hours
 
 #prereqs
 befores = {
@@ -134,25 +149,30 @@ befores = {
 }
 
 #Can't be on first step, each prereq and coreq created
+print "Prereqs"
 prereqs_init = And([(Equals(course(c, 0), Real(0))) for c in prereqs])
 prereqs_only = And([And([Equals(course(c, b), Real(1)).Implies(And([Equals(Plus([course(cp, be) for be in befores[b]]), Real(1)) for cp in prereqs[c]]))
  	for b in num_semesters[1:]]) for c in prereqs])
 
+print "Coreqs"
 coreqs_only = And([And([Equals(course(c, b), Real(1)).Implies(
 (And([Or(Equals(course(cc, b), Real(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Real(1)))) for cc in coreqs[c]])) )
 for b in num_semesters[1:]]) for c in coreqs])
 
 #electives
+print "Electives courses"
 electives_courses = And([Equals(Plus([course(c, b) for c in electives[i][2:]
 for b in num_semesters]), Real(a[0])) for i, a in enumerate(electives)])
 
+print "Electives restrictions"
 #At most electives can have one class in the schedule
 restrict_electives = And([And([LE(Plus([course(c, b) for b in num_semesters]), Real(1))
 	for c in electives[i][2:]]) for i, a in enumerate(electives)])
 
 
 #Scheduling constraints
-csm101 = Equals(course("csm101", 0), Real(1))
+print "Scheduling constraints"
+csm101 = Equals(course("CSM101", 0), Real(1))
 
 valid_falls=[0, 2, 4, 6]
 valid_springs=[1, 3, 5, 7]
@@ -165,6 +185,7 @@ spring_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real
 other_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(map_semester_to_number[s]))
 	for s in other[c]])) for b in num_semesters]) for c in other.keys()])
 
+print "Creating domain"
 facts_domain = (facts
 
 
@@ -186,13 +207,14 @@ facts_domain = (facts
 
 		& csm101
 
-		& fall_courses
+		#& fall_courses
 
-		& spring_courses
+		#& spring_courses
 
-		& other_courses
+		#& other_courses
 )
 
+print "Generate model"
 model = get_model(facts_domain)
 
 #print model
