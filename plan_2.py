@@ -6,27 +6,25 @@ import read as r
 def course (name, semester):
 	return Symbol("taken_%s_%d" % (name, semester), REAL)
 
+
 every_course, credit_hours, prereqs, coreqs = r.readPreCoReq("constraints.csv")
 required, electives_names = r.readCirriculum("cirriculum.csv")
-'''
-courses = ["EPIC151", "EBGN201", "MATH111", "CSCI101",
- "CSM101", "MATH112", "PHGN100", "CSCI261", "CSCI262", "MATH201",
- "MATH213", "CSCI341", "PHGN200", "CHGN121", "CSCI403",
- "CSCI400", "CSCI306"]
-'''
 courses = required
 
 electives = []
 for e in electives_names:
 	electives.append(e[1:])
+
 '''
+courses = ["epic151", "ebgn201", "math111", "csci101",
+ "csm101", "math112", "phgn100", "csci261", "csci262", "math201",
+ "math213", "csci341", "phgn200", "chgn121", "csci403",
+ "csci400", "csci306"]
 electives = [
-  [1, 4, "CHGN122", "CBEN110", "CHGN125", "GEGN101"],
-  [2, 0.5, "PAGN201", "PAGN102", "PAGN207", "PAGN210"],
-  [3, 3, "CSCI404", "CSCI440", "CSCI446", "CSCI445"]
+  [1, 4, "chgn122", "cben110", "chgn125", "gegn101"],
+  [2, 0.5, "pagn201", "pagn102", "pagn207", "pagn210"],
+  [3, 3, "csci404", "csci440", "csci446", "csci445"]
 ]
-'''
-'''
 credit_hours = {
 	"epic151": 3,
 	"ebgn201": 3,
@@ -46,50 +44,6 @@ credit_hours = {
 	"csci400": 3,
 	"csci306": 3,
 }
-'''
-
-all_credit_hours = credit_hours
-for arr in electives:
-	for c in arr[2:]:
-		if c not in all_credit_hours:
-			all_credit_hours[c] = arr[1]
-total_credit_hours = 0
-for c in credit_hours.keys():
-	total_credit_hours += credit_hours[c]
-for e in electives:
-	total_credit_hours += (e[0]*e[1])
-split = total_credit_hours / 8
-min_credit_hours = 12.0#floor(2) + 0.5
-max_credit_hours = 19.0#min_credit_hours + 1
-
-
-map_semester_to_number = {
-	"f1": 0,
-	"s1": 1,
-	"f2": 2,
-	"s2": 3,
-	"f3": 4,
-	"s3": 5,
-	"f4": 6,
-	"s4": 7
-}
-
-fall = ["csci445"] #list of fall
-spring = ["csci404", "pagn102"] #list of spring
-other = { #hash table poRealing to array of right semester
-	"csci440": ["f2", "f3", "s4"],
-	"csci446": ["s1", "s4"]
-}
-
-all_courses = []
-for c in courses:
-	all_courses.append(c)
-for co in electives:
-	for c in co[2:]:
-		all_courses.append(c)
-
-#Need this in this format
-'''
 prereqs = {
    "math112": ["math111"],
    "phgn100": ["math111"],
@@ -117,61 +71,99 @@ coreqs = {
 	"csci446": ["csci400"]
 }
 '''
+already_taken = []#["MATH111", "PHGN100"]
+fall = ["csci445"] #list of fall
+spring = ["csci404", "pagn102"] #list of spring
+other = { #hash table poRealing to array of right semester
+	"csci440": ["f2", "f3", "s4"],
+	"csci446": ["s1", "s4"]
+}
+
+
+all_credit_hours = credit_hours
+for arr in electives:
+	for c in arr[2:]:
+		if c not in all_credit_hours:
+			all_credit_hours[c] = arr[1]
+total_credit_hours = 0
+for c in credit_hours.keys():
+	total_credit_hours += credit_hours[c]
+for e in electives:
+	total_credit_hours += (e[0]*e[1])
+split = total_credit_hours / 8
+min_credit_hours = 12.0#6.0
+max_credit_hours = 19.0#10.5
+
+map_semester_to_number = {
+	"f1": 0,
+	"s1": 1,
+	"f2": 2,
+	"s2": 3,
+	"f3": 4,
+	"s3": 5,
+	"f4": 6,
+	"s4": 7
+}
+
+all_courses = []
+for c in courses:
+	all_courses.append(c)
+for co in electives:
+	for c in co[2:]:
+		all_courses.append(c)
+
 facts = TRUE()
 
 #Range for classes, only one class per schedule
-num_semesters = [0, 1, 2, 3, 4, 5, 6, 7]
-print "Determining range for all classes"
+num_semesters = [-1, 0, 1, 2, 3, 4, 5, 6, 7]
 always_range = And([Or(Equals(course(c, b), Real(0)), Equals(course(c, b), Real(1))) for c in all_courses for b in num_semesters])
 
-print "Logic for required classes"
 #Required classes need at least one class
 all_classes = And([Equals(Plus([course(c, b) for b in num_semesters]), Real(1)) for c in courses])
 
 #credit hours things
 #based on number of classes
-print "Logic for credit hours"
-all_semester = And([And(GE(Plus([course(c, b) for c in all_courses]), Real(2)), LE(Plus([course(c, b) for c in all_courses]), Real(3))) for b in num_semesters])
+all_semester = And([And(GE(Plus([course(c, b) for c in all_courses]), Real(2)), LE(Plus([course(c, b) for c in all_courses]), Real(3))) for b in num_semesters[1:]])
 
 #based on credit hours
 all_semester_hours = And([And(GE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(min_credit_hours)),
-	LE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(max_credit_hours))) for b in num_semesters])
+	LE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(max_credit_hours))) for b in num_semesters[1:]])
 
 #prereqs
 befores = {
-	1: [0],
-	2: [0, 1],
-	3: [0, 1, 2],
-	4: [0, 1, 2, 3],
-	5: [0, 1, 2, 3, 4],
-	6: [0, 1, 2, 3, 4, 5],
-	7: [0, 1, 2, 3, 4, 5, 6]
+	0: [-1],
+	1: [-1, 0],
+	2: [-1, 0, 1],
+	3: [-1, 0, 1, 2],
+	4: [-1, 0, 1, 2, 3],
+	5: [-1, 0, 1, 2, 3, 4],
+	6: [-1, 0, 1, 2, 3, 4, 5],
+	7: [-1, 0, 1, 2, 3, 4, 5, 6]
 }
 
 #Can't be on first step, each prereq and coreq created
-print "Prereqs"
 prereqs_init = And([(Equals(course(c, 0), Real(0))) for c in prereqs])
 prereqs_only = And([And([Equals(course(c, b), Real(1)).Implies(And([Equals(Plus([course(cp, be) for be in befores[b]]), Real(1)) for cp in prereqs[c]]))
  	for b in num_semesters[1:]]) for c in prereqs])
 
-print "Coreqs"
 coreqs_only = And([And([Equals(course(c, b), Real(1)).Implies(
 (And([Or(Equals(course(cc, b), Real(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Real(1)))) for cc in coreqs[c]])) )
 for b in num_semesters[1:]]) for c in coreqs])
 
+#already taken 
+already_taken_courses = And([Equals(course(c, -1), Real(1)) for c in already_taken])
+not_yet_taken_courses = And([Equals(course(c, -1), Real(0)) for c in all_courses if c not in already_taken])
+
 #electives
-print "Electives courses"
 electives_courses = And([Equals(Plus([course(c, b) for c in electives[i][2:]
 for b in num_semesters]), Real(a[0])) for i, a in enumerate(electives)])
 
-print "Electives restrictions"
 #At most electives can have one class in the schedule
 restrict_electives = And([And([LE(Plus([course(c, b) for b in num_semesters]), Real(1))
 	for c in electives[i][2:]]) for i, a in enumerate(electives)])
 
 
 #Scheduling constraints
-print "Scheduling constraints"
 csm101 = Equals(course("CSM101", 0), Real(1))
 
 valid_falls=[0, 2, 4, 6]
@@ -200,6 +192,10 @@ facts_domain = (facts
 		& prereqs_only
 
 		& coreqs_only
+
+		& already_taken_courses
+
+		& not_yet_taken_courses
 
 		& electives_courses
 
@@ -246,7 +242,7 @@ else:
 		if x[1]._content.payload == 1:
 			if x[0]._content.payload[0].endswith('0'):
 				f1_classes.append(x[0])
-			if x[0]._content.payload[0].endswith('1'):
+			if x[0]._content.payload[0].endswith('_1'):
 				s1_classes.append(x[0])
 			if x[0]._content.payload[0].endswith('2'):
 				f2_classes.append(x[0])
@@ -261,6 +257,7 @@ else:
 			if x[0]._content.payload[0].endswith('7'):
 				s4_classes.append(x[0])
 
+	print "Already taken: " + str(already_taken) 
 	print "f1: " + str(f1_classes)
 	print "s1: " + str(s1_classes)
 	print "f2: " + str(f2_classes)
