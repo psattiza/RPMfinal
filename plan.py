@@ -3,29 +3,32 @@ from pysmt.typing import INT
 import random
 
 def course (name, semester):
-	return Symbol("taken_%s_%d" % (name, semester)) 
+	return Symbol("taken_%s_%d" % (name, semester))
+
+def course_2(name):
+	return Symbol("taken_%s" % (name))
 
 #Choose first semester courses out of those without prereqs
 courses = ["math112", "phgn100", "epic151", "pagn103", "ebgn201", "math111", "chgn121", "csci101", "pagn102"]
 
-#Need this in this format 
+#Need this in this format
 prereqs = {
    "math112": ["math111"],
-   "phgn100": ["math111"] 
+   "phgn100": ["math111"]
 }
 
 coreqs = {
     "phgn100": ["math112"]
 }
 
-no_prereqs = []
+#Electives: randomize which are chosen, then append onto courses
+
 no_prereqs_names = []
 both_names = []
 only_coreq = []
 only_prereq = []
 for c in courses:
 	if c not in prereqs and c not in coreqs:
-		no_prereqs.append(course(c, 1))
 		no_prereqs_names.append(c)
 	if c in prereqs.keys() and c in coreqs:
 		both_names.append(c)
@@ -34,23 +37,25 @@ for c in courses:
 	if c not in prereqs.keys() and c in coreqs.keys():
 		only_coreq.append(c)
 
-before_courses_not_csm101 = random.sample(no_prereqs, 2)
+before_courses_not_csm101 = random.sample(no_prereqs_names, 2)
 before_courses = [course("csm101", 1)]
+taken = []
+taken_no_time = []
 for b in before_courses_not_csm101:
-	before_courses.append(b)
+	before_courses.append(course(b, 1))
+	taken.append(course(b, 1))
+	taken_no_time.append(course_2(b))
+taken.append(course("csm101", 1))
 
-
-before_non_courses = [Not(item) for item in no_prereqs if item not in before_courses]
+before_non_courses = [Not(course(item, 1)) for item in no_prereqs_names if course(item, 1) not in before_courses]
+n_taken_no_time = [Not(course_2(item)) for item in courses if course_2(item) not in taken_no_time]
 
 before = [1]
 print "1: " + str(before_courses )
-taken = []
-for c in before_courses:
-	taken.append(c)
 
 #Generalize iffs
 iffs = []
-	
+
 for current in [2, 3, 4]:
 	facts = TRUE()
 	facts_courses_before = (And([c for c in taken]))
@@ -61,10 +66,9 @@ for current in [2, 3, 4]:
 	bare_iffs = (facts & (And([course(c, current).Iff(And([Not(course(c, b)) for b in before])) for c in no_prereqs_names])))
 	prereq_iffs = (facts & (And([course(c, current).Iff(And((And([Not(course(c, b)) for b in before])), (And([Or([course(cp, be) for be in before]) for cp in prereqs[c]]))    )) for c in only_prereq])))
 	both_iffs = (facts & (And([course(c, current).Iff(And((And([Not(course(c, b)) for b in before])), (And([Or([course(cp, be) for be in before]) for cp in prereqs[c]])),  (And([Or(course(cc, current), (Or([course(cc, bef) for bef in before]))) for cc in coreqs[c]]))    )) for c in both_names])))
-
 	coreq_iffs = (facts & (And([course(c, current).Iff(And((And([Not(course(c, b)) for b in before])), (And([Or(course(cc, current), (Or([course(cc, bef) for bef in before]))) for cc in coreqs[c]]))    )) for c in only_coreq])))
-	#Scheduling constraints: add in Equals(current, Int(1)) for all valid semesters. Have to handle for first semester and handle classes that are variable (not all, fall, or spring). Hash each class to each time they are available, add that into generalized  
-	facts_domain = (facts & 
+	#Scheduling constraints: add in Equals(current, Int(1)) for all valid semesters. Have to handle for first semester and handle classes that are variable (not all, fall, or spring). Hash each class to each time they are available, add that into generalized
+	facts_domain = (facts &
 		facts_courses_before
 
 		& facts_courses_non_before
@@ -95,18 +99,19 @@ for current in [2, 3, 4]:
 
 
 	#	& course("pagn102", current).Iff(And((And([Not(course("pagn102", b)) for b in before])) ))
+
+
 	& bare_iffs
-	
+
 	& prereq_iffs
 
 	& both_iffs
 
 	& coreq_iffs
-	)	
+	)
 
 
 	model = get_model(facts_domain)
-
 	current_all_courses = []
 	if model is None:
 		print("UNSAT")
@@ -129,7 +134,7 @@ for current in [2, 3, 4]:
 			while num_classes < max_semester_length:
 				before_course = random.sample(current_only_curr, 1)[0]
 				course_name = before_course._content.payload[0].split("_")[1]
-				#Handle coreqs	
+				#Handle coreqs
 				if course_name in coreqs:
 					coreqs_courses = []
 					all_cos = coreqs[course_name]
@@ -137,15 +142,15 @@ for current in [2, 3, 4]:
 					for cos in all_cos:
 						if course(cos, current) in current_only_curr:
 							coreqs_courses.append(course(cos, current))
-					#Add them to before_courses if not already added 
+					#Add them to before_courses if not already added
 					if len(coreqs_courses) > 0:
 						for c in coreqs_courses:
 							if c not in before_courses:
 								before_courses.append(c)
 								current_only_curr.remove(c)
 					#Pop out extra before_courses
-					length_now = len(before_courses) + 1 #include new course 
-					if length_now == max_semester_length:	
+					length_now = len(before_courses) + 1 #include new course
+					if length_now == max_semester_length:
 						num_classes = max_semester_length
 					elif length_now > max_semester_length:
 						num_to_pop = length_now - max_semester_length
