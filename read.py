@@ -93,9 +93,19 @@ def readSchedule(filename):
     except IOError:
         print("File: %s, not found" % filename)
 
+def readTaken(filename):
+    try:
+        with open(filename) as f:
+            reader = csv.reader(f)
+            return next(reader)
+    except IOError:
+        print("File: %s, not found" % filename)
+
+
 if __name__ == '__main__':
-    fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = readSchedule("schedule.csv")
-    print("Fall: {}".format(fall))
-    print("Other: {}".format(other))
+    #fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = readSchedule("schedule.csv")
+    #print("Fall: {}".format(fall))
+    #print("Other: {}".format(other))
     #print(readCirriculum("cirriculum.csv"))
 	#print(readPreCoReq("constraints.csv"))
+	print(readTaken("taken.csv"))

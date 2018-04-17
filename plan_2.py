@@ -1,17 +1,44 @@
+#pysmt needs to be installed
 from pysmt.shortcuts import Symbol, LE, GE, And, Int, Or, Iff, Implies, ExactlyOne, FALSE, TRUE, Not, get_model, get_unsat_core, is_sat, is_unsat, Plus, Equals, Real, Times
 from pysmt.typing import INT, REAL
+
+#come with python
+import argparse
 import random
+
+#local import
 import read as r
 
 def course (name, semester):
 	return Symbol("taken_%s_%d" % (name, semester), REAL)
 
 
-every_course, credit_hours, prereqs, coreqs = r.readPreCoReq("constraints.csv")
-required, electives_names = r.readCirriculum("cirriculum.csv")
-courses = required
+parser = argparse.ArgumentParser(description='Course planning with some help from pySMT')
+parser.add_argument('--cirriculum', metavar='cir', type=str, default="cirriculum.csv",
+                    help='specifies filepath to cirriculum csv file, default "cirriculum.csv"')
+parser.add_argument('--courses', metavar='c', type=str, default="courses.csv",
+                    help='specifies filepath to courses csv file, default "courses.csv"')
+parser.add_argument('--schedule', metavar='s', type=str, default="schedule.csv",
+                    help='specifies filepath to class shedule csv file')
+parser.add_argument('--taken', metavar='s', type=str,
+                    help='specifies filepath to class shedule csv file')
+args = parser.parse_args()
 
-electives = electives_names
+print(args)
+every_course, credit_hours, prereqs, coreqs = r.readPreCoReq(args.courses)
+courses, electives = r.readCirriculum(args.cirriculum)
+
+fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.readSchedule(args.schedule)
+
+already_taken = []#["MATH111", "PHGN100"]
+if args.taken is not None:
+	#print("Already taken: {}".format(args.taken))
+	already_taken = r.readTaken(args.taken)
+	#print(already_taken)
+
+
+
+
 
 '''
 courses = ["epic151", "ebgn201", "math111", "csci101",
@@ -68,12 +95,7 @@ coreqs = {
 	"csci445": ["csci403"],
 	"csci446": ["csci400"]
 }
-'''
 
-fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.readSchedule("schedule.csv")
-already_taken = []#["MATH111", "PHGN100"]
-
-'''
 fall = ["csci445"] #list of fall
 spring = ["csci404", "pagn102"] #list of spring
 other = { #hash table poRealing to array of right semester
