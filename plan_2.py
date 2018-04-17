@@ -11,9 +11,7 @@ every_course, credit_hours, prereqs, coreqs = r.readPreCoReq("constraints.csv")
 required, electives_names = r.readCirriculum("cirriculum.csv")
 courses = required
 
-electives = []
-for e in electives_names:
-	electives.append(e[1:])
+electives = electives_names
 
 '''
 courses = ["epic151", "ebgn201", "math111", "csci101",
@@ -71,13 +69,18 @@ coreqs = {
 	"csci446": ["csci400"]
 }
 '''
+
+fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.readSchedule("schedule.csv")
 already_taken = []#["MATH111", "PHGN100"]
+
+'''
 fall = ["csci445"] #list of fall
 spring = ["csci404", "pagn102"] #list of spring
 other = { #hash table poRealing to array of right semester
 	"csci440": ["f2", "f3", "s4"],
 	"csci446": ["s1", "s4"]
 }
+'''
 
 
 all_credit_hours = credit_hours
@@ -94,6 +97,7 @@ split = total_credit_hours / 8
 min_credit_hours = 12.0#6.0
 max_credit_hours = 19.0#10.5
 
+'''
 map_semester_to_number = {
 	"f1": 0,
 	"s1": 1,
@@ -104,6 +108,7 @@ map_semester_to_number = {
 	"f4": 6,
 	"s4": 7
 }
+'''
 
 all_courses = []
 for c in courses:
@@ -150,7 +155,7 @@ coreqs_only = And([And([Equals(course(c, b), Real(1)).Implies(
 (And([Or(Equals(course(cc, b), Real(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Real(1)))) for cc in coreqs[c]])) )
 for b in num_semesters[1:]]) for c in coreqs])
 
-#already taken 
+#already taken
 already_taken_courses = And([Equals(course(c, -1), Real(1)) for c in already_taken])
 not_yet_taken_courses = And([Equals(course(c, -1), Real(0)) for c in all_courses if c not in already_taken])
 
@@ -165,9 +170,10 @@ restrict_electives = And([And([LE(Plus([course(c, b) for b in num_semesters]), R
 
 #Scheduling constraints
 csm101 = Equals(course("CSM101", 0), Real(1))
-
+'''
 valid_falls=[0, 2, 4, 6]
 valid_springs=[1, 3, 5, 7]
+'''
 fall_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(f))
 	for f in valid_falls])) for b in num_semesters]) for c in fall])
 
@@ -177,41 +183,40 @@ spring_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real
 other_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(map_semester_to_number[s]))
 	for s in other[c]])) for b in num_semesters]) for c in other.keys()])
 
-print "Creating domain"
-facts_domain = (facts
+print("Creating domain")
+facts_domain = And(facts,
 
+		 always_range,
 
-		& always_range
+		 all_semester_hours,
 
-		& all_semester_hours
+		 all_classes,
 
-		& all_classes
+		 prereqs_init,
 
-		& prereqs_init
+		 prereqs_only,
 
-		& prereqs_only
+		 coreqs_only,
 
-		& coreqs_only
+		 already_taken_courses,
 
-		& already_taken_courses
+		 not_yet_taken_courses,
 
-		& not_yet_taken_courses
+		 electives_courses,
 
-		& electives_courses
+		 restrict_electives,
 
-		& restrict_electives
+		 csm101,
 
-		& csm101
+		 fall_courses,
 
-		#& fall_courses
+		 spring_courses,
 
-		#& spring_courses
-
-		#& other_courses
+		 other_courses
 )
 
-print "Generate model"
-model = get_model(facts_domain)
+print("Generate model")
+model = get_model(facts_domain, solver_name="yices")
 
 #print model
 if model is None:
@@ -257,12 +262,12 @@ else:
 			if x[0]._content.payload[0].endswith('7'):
 				s4_classes.append(x[0])
 
-	print "Already taken: " + str(already_taken) 
-	print "f1: " + str(f1_classes)
-	print "s1: " + str(s1_classes)
-	print "f2: " + str(f2_classes)
-	print "s2: " + str(s2_classes)
-	print "f3: " + str(f3_classes)
-	print "s3: " + str(s3_classes)
-	print "f4: " + str(f4_classes)
-	print "s4: " + str(s4_classes)
+	print("Already taken: " + str(already_taken))
+	print( "f1: " + str(f1_classes))
+	print( "s1: " + str(s1_classes))
+	print( "f2: " + str(f2_classes))
+	print( "s2: " + str(s2_classes))
+	print( "f3: " + str(f3_classes))
+	print( "s3: " + str(s3_classes))
+	print( "f4: " + str(f4_classes))
+	print( "s4: " + str(s4_classes))
