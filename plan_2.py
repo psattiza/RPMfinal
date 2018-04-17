@@ -20,11 +20,11 @@ parser.add_argument('--courses', metavar='c', type=str, default="courses.csv",
                     help='specifies filepath to courses csv file, default "courses.csv"')
 parser.add_argument('--schedule', metavar='s', type=str, default="schedule.csv",
                     help='specifies filepath to class shedule csv file, default "schedule.csv"')
-parser.add_argument('--taken', metavar='s', type=str,
-                    help='specifies filepath to class shedule csv file')
+parser.add_argument('--student', metavar='s', type=str, default="student.csv",
+                    help='specifies filepath to student csv file, default student.csv')
 args = parser.parse_args()
 
-print(args)
+#print(args)
 every_course, credit_hours, prereqs, coreqs = r.readPreCoReq(args.courses)
 courses, electives = r.readCirriculum(args.cirriculum)
 
@@ -33,11 +33,7 @@ fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.rea
 min_credit_hours = 12.0#6.0
 max_credit_hours = 19.0#10.5
 
-already_taken = []#["MATH111", "PHGN100"]
-if args.taken is not None:
-	#print("Already taken: {}".format(args.taken))
-	already_taken = r.readTaken(args.taken)
-	#print(already_taken)
+already_taken, min_credit_hours, max_credit_hours = r.readStudent(args.student)
 
 
 

@@ -93,11 +93,16 @@ def readSchedule(filename):
     except IOError:
         print("File: %s, not found" % filename)
 
-def readTaken(filename):
+def readStudent(filename):
     try:
         with open(filename) as f:
             reader = csv.reader(f)
-            return next(reader)
+            taken = next(reader)
+            hours = next(reader)
+            min_credit_hours = float(hours[0])
+            max_credit_hours = float(hours[1])
+            return taken, min_credit_hours, max_credit_hours
+
     except IOError:
         print("File: %s, not found" % filename)
 
@@ -108,4 +113,4 @@ if __name__ == '__main__':
     #print("Other: {}".format(other))
     #print(readCirriculum("cirriculum.csv"))
 	#print(readPreCoReq("constraints.csv"))
-	print(readTaken("taken.csv"))
+	print(readStudent("student.csv"))
