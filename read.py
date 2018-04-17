@@ -71,19 +71,19 @@ def readSchedule(filename):
             semesters = next(reader)
             for i, sem in enumerate(semesters):
                 map_semester_to_number[sem] = i
-                if sem.casefold().startswith("s"):
+                if sem.lower().startswith("s"):
                     valid_springs.append(i)
-                elif sem.casefold().startswith("f"):
+                elif sem.lower().startswith("f"):
                     valid_falls.append(i)
 
 
             for line in reader:
                 course = line[0]
-                if line[1].casefold() == "a":
+                if line[1].lower() == "a":
                     continue
-                elif line[1].casefold() == "f":
+                elif line[1].lower() == "f":
                     fall.append(course)
-                elif line[1].casefold() == "s":
+                elif line[1].lower() == "s":
                     spring.append(course)
                 else:
                     sems = line[1].split()
