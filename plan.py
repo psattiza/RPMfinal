@@ -1,168 +1,305 @@
-from pysmt.shortcuts import Symbol, LE, GE, And, Int, Or, Iff, Implies, ExactlyOne, FALSE, TRUE, Not, get_model, get_unsat_core, is_sat, is_unsat, Plus, Equals
-from pysmt.typing import INT
+#pysmt needs to be installed
+from pysmt.shortcuts import Symbol, LE, GE, And, Int, Or, Iff, Implies, ExactlyOne, FALSE, TRUE, Not, get_model, get_unsat_core, is_sat, is_unsat, Plus, Equals, Real, Times
+from pysmt.typing import INT, REAL
+
+#come with python
+import argparse
 import random
 
+#local import
+import read as r
+
 def course (name, semester):
-	return Symbol("taken_%s_%d" % (name, semester))
+	return Symbol("taken_%s_%d" % (name, semester), REAL)
 
-def course_2(name):
-	return Symbol("taken_%s" % (name))
 
-#Choose first semester courses out of those without prereqs
-courses = ["math112", "phgn100", "epic151", "pagn103", "ebgn201", "math111", "chgn121", "csci101", "pagn102"]
+parser = argparse.ArgumentParser(description='Course planning with some help from pySMT')
+parser.add_argument('--cirriculum', metavar='cir', type=str, default="cirriculum.csv",
+                    help='specifies filepath to cirriculum csv file, default "cirriculum.csv"')
+parser.add_argument('--courses', metavar='c', type=str, default="courses.csv",
+                    help='specifies filepath to courses csv file, default "courses.csv"')
+parser.add_argument('--schedule', metavar='s', type=str, default="schedule.csv",
+                    help='specifies filepath to class shedule csv file, default "schedule.csv"')
+parser.add_argument('--student', metavar='s', type=str, default="student.csv",
+                    help='specifies filepath to student csv file, default student.csv')
+args = parser.parse_args()
 
-#Need this in this format
+#print(args)
+every_course, credit_hours, prereqs, coreqs = r.readPreCoReq(args.courses)
+courses, electives = r.readCirriculum(args.cirriculum)
+
+fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.readSchedule(args.schedule)
+
+#Default values
+min_credit_hours = 12.0#6.0
+max_credit_hours = 19.0#10.5
+semesters_remaining = 8
+
+already_taken, min_credit_hours, max_credit_hours, semesters_remaining = r.readStudent(args.student)
+
+
+
+
+
+'''
+courses = ["epic151", "ebgn201", "math111", "csci101",
+ "csm101", "math112", "phgn100", "csci261", "csci262", "math201",
+ "math213", "csci341", "phgn200", "chgn121", "csci403",
+ "csci400", "csci306"]
+electives = [
+  [1, 4, "chgn122", "cben110", "chgn125", "gegn101"],
+  [2, 0.5, "pagn201", "pagn102", "pagn207", "pagn210"],
+  [3, 3, "csci404", "csci440", "csci446", "csci445"]
+]
+credit_hours = {
+	"epic151": 3,
+	"ebgn201": 3,
+	"math111": 4,
+	"csci101": 3,
+	"csm101": 0.5,
+	"math112": 4,
+	"phgn100": 4.5,
+	"csci261": 3,
+	"csci262": 3,
+	"math201": 3,
+	"math213": 4,
+	"csci341": 3,
+	"phgn200": 4.5,
+	"chgn121": 4,
+	"csci403": 3,
+	"csci400": 3,
+	"csci306": 3,
+}
 prereqs = {
    "math112": ["math111"],
-   "phgn100": ["math111"]
+   "phgn100": ["math111"],
+   "math201": ["math112"],
+   "csci262": ["csci261"],
+   "math213": ["math112"],
+   "csci404": ["csci262", "math201"],
+   "csci341": ["csci261"],
+   "phgn200": ["phgn100"],
+   "chgn122": ["chgn121"],
+   "chgn125": ["chgn125"],
+   "csci440": ["csci341", "csci261"],
+   "csci445": ["csci262"],
+   "csci446": ["csci445"],
+   "csci400": ["csci306"],
+   "csci403": ["csci262"],
+   "csci306": ["csci262"]
 }
 
 coreqs = {
-    "phgn100": ["math112"]
+    "phgn100": ["math112"],
+	"csci341": ["csci262"],
+	"phgn200": ["math213"],
+	"csci445": ["csci403"],
+	"csci446": ["csci400"]
 }
 
-#Electives: randomize which are chosen, then append onto courses
+fall = ["csci445"] #list of fall
+spring = ["csci404", "pagn102"] #list of spring
+other = { #hash table poRealing to array of right semester
+	"csci440": ["f2", "f3", "s4"],
+	"csci446": ["s1", "s4"]
+}
+'''
 
-no_prereqs_names = []
-both_names = []
-only_coreq = []
-only_prereq = []
+
+all_credit_hours = credit_hours
+for arr in electives:
+	for c in arr[2:]:
+		if c not in all_credit_hours:
+			all_credit_hours[c] = arr[1]
+
+taken_credits = 0
+for t in already_taken:
+	if t in all_credit_hours.keys():
+		taken_credits += all_credit_hours[t]
+
+total_credit_hours = 0
+for c in credit_hours.keys():
+	total_credit_hours += credit_hours[c]
+for e in electives:
+	total_credit_hours += (e[0]*e[1])
+
+credit_hours_remaining = total_credit_hours - taken_credits
+
+
+
+'''
+map_semester_to_number = {
+	"f1": 0,
+	"s1": 1,
+	"f2": 2,
+	"s2": 3,
+	"f3": 4,
+	"s3": 5,
+	"f4": 6,
+	"s4": 7
+}
+'''
+
+all_courses = []
 for c in courses:
-	if c not in prereqs and c not in coreqs:
-		no_prereqs_names.append(c)
-	if c in prereqs.keys() and c in coreqs:
-		both_names.append(c)
-	if c in prereqs.keys() and c not in coreqs.keys():
-		only_prereq.append(c)
-	if c not in prereqs.keys() and c in coreqs.keys():
-		only_coreq.append(c)
+	all_courses.append(c)
+for co in electives:
+	for c in co[2:]:
+		all_courses.append(c)
 
-before_courses_not_csm101 = random.sample(no_prereqs_names, 2)
-before_courses = [course("csm101", 1)]
-taken = []
-taken_no_time = []
-for b in before_courses_not_csm101:
-	before_courses.append(course(b, 1))
-	taken.append(course(b, 1))
-	taken_no_time.append(course_2(b))
-taken.append(course("csm101", 1))
+facts = TRUE()
 
-before_non_courses = [Not(course(item, 1)) for item in no_prereqs_names if course(item, 1) not in before_courses]
-n_taken_no_time = [Not(course_2(item)) for item in courses if course_2(item) not in taken_no_time]
+#Range for classes, only one class per schedule
+num_semesters = list(range(-1, semesters_remaining))
+always_range = And([Or(Equals(course(c, b), Real(0)), Equals(course(c, b), Real(1))) for c in all_courses for b in num_semesters])
 
-before = [1]
-print "1: " + str(before_courses )
+#Required classes need at least one class
+all_classes = And([Equals(Plus([course(c, b) for b in num_semesters]), Real(1)) for c in courses])
 
-#Generalize iffs
-iffs = []
+#credit hours things
+#based on number of classes
+all_semester = And([And(GE(Plus([course(c, b) for c in all_courses]), Real(2)), LE(Plus([course(c, b) for c in all_courses]), Real(3))) for b in num_semesters[1:]])
 
-for current in [2, 3, 4]:
-	facts = TRUE()
-	facts_courses_before = (And([c for c in taken]))
-	facts_courses_non_before = (And([c for c in before_non_courses]))
+#based on credit hours
+all_semester_hours = And([And(GE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(min_credit_hours)),
+	LE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(max_credit_hours))) for b in num_semesters[1:]])
 
-	#no prereqs/coreqs
-	#print no_prereqs_names
-	bare_iffs = (facts & (And([course(c, current).Iff(And([Not(course(c, b)) for b in before])) for c in no_prereqs_names])))
-	prereq_iffs = (facts & (And([course(c, current).Iff(And((And([Not(course(c, b)) for b in before])), (And([Or([course(cp, be) for be in before]) for cp in prereqs[c]]))    )) for c in only_prereq])))
-	both_iffs = (facts & (And([course(c, current).Iff(And((And([Not(course(c, b)) for b in before])), (And([Or([course(cp, be) for be in before]) for cp in prereqs[c]])),  (And([Or(course(cc, current), (Or([course(cc, bef) for bef in before]))) for cc in coreqs[c]]))    )) for c in both_names])))
-	coreq_iffs = (facts & (And([course(c, current).Iff(And((And([Not(course(c, b)) for b in before])), (And([Or(course(cc, current), (Or([course(cc, bef) for bef in before]))) for cc in coreqs[c]]))    )) for c in only_coreq])))
-	#Scheduling constraints: add in Equals(current, Int(1)) for all valid semesters. Have to handle for first semester and handle classes that are variable (not all, fall, or spring). Hash each class to each time they are available, add that into generalized
-	facts_domain = (facts &
-		facts_courses_before
+#prereqs
+befores_keys = range(semesters_remaining)
+befores_values = [[] for i in range(semesters_remaining)]
 
-		& facts_courses_non_before
+befores_start = 0
+for s in range(len(befores_values)):
+	befores_values[s] = range(-1, befores_start)
+	befores_start += 1
 
-	#	& course("math112", current).Iff(And((Or([course("math111", b) for b in before])), (And([Not(course("math112", b)) for b in before]))))
+befores = {}
+for i in range(len(befores_keys)):
+	befores[befores_keys[i]] = befores_values[i]
+#Can't be on first step, each prereq and coreq created
+prereqs_init = And([(Equals(course(c, 0), Real(0))) for c in prereqs])
+prereqs_only = And([And([Equals(course(c, b), Real(1)).Implies(And([Equals(Plus([course(cp, be) for be in befores[b]]), Real(1)) for cp in prereqs[c]]))
+ 	for b in num_semesters[1:]]) for c in prereqs])
 
-	#	& course("phgn100", current).Iff(And((Or([course("math111", b) for b in before])), (Or(course("math112", current), (Or([course("math112", b) for b in before])))),(And([Not(course("phgn100", b)) for b in before]))))
+coreqs_only = And([And([Equals(course(c, b), Real(1)).Implies(
+(And([Or(Equals(course(cc, b), Real(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Real(1)))) for cc in coreqs[c]])) )
+for b in num_semesters[1:]]) for c in coreqs])
 
-	#	& course("epic151", current).Iff(And((And([Not(course("epic151", b)) for b in before]))))
+#already taken
+already_taken_courses = And([Equals(course(c, -1), Real(1)) for c in already_taken])
+not_yet_taken_courses = And([Equals(course(c, -1), Real(0)) for c in all_courses if c not in already_taken])
 
+#electives
+electives_courses = And([Equals(Plus([course(c, b) for c in electives[i][2:]
+for b in num_semesters]), Real(a[0])) for i, a in enumerate(electives)])
 
-	#	& course("pagn103", current).Iff(And((And([Not(course("pagn103", b)) for b in before]))))
-
-
-	#	& course("ebgn201", current).Iff(And((And([Not(course("ebgn201", b)) for b in before]))))
+#At most electives can have one class in the schedule
+restrict_electives = And([And([LE(Plus([course(c, b) for b in num_semesters]), Real(1))
+	for c in electives[i][2:]]) for i, a in enumerate(electives)])
 
 
-	#	& course("math111", current).Iff(And((And([Not(course("math111", b)) for b in before]))))
+#Scheduling constraints
+csm101 = Or(Equals(course("CSM101", 0), Real(1)),  Equals(course("CSM101", -1), Real(1)))
+'''
+valid_falls=[0, 2, 4, 6]
+valid_springs=[1, 3, 5, 7]
+'''
+fall_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(f))
+	for f in valid_falls])) for b in num_semesters]) for c in fall])
 
+spring_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(s))
+	for s in valid_springs])) for b in num_semesters]) for c in spring])
 
-	#	& course("csm101", current).Iff(And((And([Not(course("csm101", b)) for b in before]))))
+other_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(map_semester_to_number[s]))
+	for s in other[c]])) for b in num_semesters]) for c in other.keys()])
 
+print("Creating domain")
+facts_domain = And(facts,
 
-	#	& course("chgn121", current).Iff(And((And([Not(course("chgn121", b)) for b in before]))))
+		 always_range,
 
+		 all_semester_hours,
 
-	#	& course("csci101", current).Iff(And((And([Not(course("csci101", b)) for b in before]))))
+		 all_classes,
 
+		 prereqs_init,
 
-	#	& course("pagn102", current).Iff(And((And([Not(course("pagn102", b)) for b in before])) ))
+		 prereqs_only,
 
+		 coreqs_only,
 
-	& bare_iffs
+		 already_taken_courses,
 
-	& prereq_iffs
+		 not_yet_taken_courses,
 
-	& both_iffs
+		 electives_courses,
 
-	& coreq_iffs
-	)
+		 restrict_electives,
 
+		 csm101,
 
-	model = get_model(facts_domain)
-	current_all_courses = []
-	if model is None:
-		print("UNSAT")
-	else:
-		for x in model:
-			if x[1]._content.payload is True:
-				current_all_courses.append(x[0])
-		current_only_curr = []
-		for c in current_all_courses:
-			if c not in taken:
-				current_only_curr.append(c)
-		if len(current_only_curr) < 3:
-			before_courses = current_only_curr
-		else:
-			#Credit hours and coreqs
-			#Credit hours: when add class, add to credit hour limit, then check. Coreqs: will have to handle but should be fine. Extra function to compute it? Hash for each class to credit hour length
-			num_classes = 0
-			before_courses = []
-			max_semester_length = 3
-			while num_classes < max_semester_length:
-				before_course = random.sample(current_only_curr, 1)[0]
-				course_name = before_course._content.payload[0].split("_")[1]
-				#Handle coreqs
-				if course_name in coreqs:
-					coreqs_courses = []
-					all_cos = coreqs[course_name]
-					#Collect all coreqs in this semester
-					for cos in all_cos:
-						if course(cos, current) in current_only_curr:
-							coreqs_courses.append(course(cos, current))
-					#Add them to before_courses if not already added
-					if len(coreqs_courses) > 0:
-						for c in coreqs_courses:
-							if c not in before_courses:
-								before_courses.append(c)
-								current_only_curr.remove(c)
-					#Pop out extra before_courses
-					length_now = len(before_courses) + 1 #include new course
-					if length_now == max_semester_length:
-						num_classes = max_semester_length
-					elif length_now > max_semester_length:
-						num_to_pop = length_now - max_semester_length
-						while num_to_pop > 0:
-							before_courses.pop(0)
-							num_to_pop -= 1
-				current_only_curr.remove(before_course)
-				before_courses.append(before_course)
-				num_classes = len(before_courses)
-			#before_courses = random.sample(current_only_curr, 3)
-		for c in before_courses:
-			taken.append(c)
-		before_non_courses = [Not(item) for item in current_all_courses if item not in taken]
-		print str(current) + ": " + str(before_courses )
-		before.append(current)
+		 fall_courses,
+
+		 spring_courses,
+
+		 other_courses
+)
+
+print("Generate model")
+model = get_model(facts_domain, solver_name="yices")
+
+#print model
+if model is None:
+	print("UNSAT")
+    # In isolation they are both fine, rules from both are probably
+    # interacting.
+    #
+    # The problem is given by a nesting of And().
+    # conjunctive_partition can be used to obtain a "flat"
+    # structure, i.e., a list of conjuncts.
+    #
+	from pysmt.rewritings import conjunctive_partition
+	conj = conjunctive_partition(facts_domain)
+	ucore = get_unsat_core(conj)
+	print("UNSAT-Core size '%d'" % len(ucore))
+	for f in ucore:
+		print(f.serialize())
+else:
+	f1_classes = []
+	s1_classes = []
+	f2_classes = []
+	s2_classes = []
+	f3_classes = []
+	s3_classes = []
+	f4_classes = []
+	s4_classes = []
+	for x in model:
+		if x[1]._content.payload == 1:
+			if x[0]._content.payload[0].endswith('0'):
+				f1_classes.append(x[0])
+			if x[0]._content.payload[0].endswith('_1'):
+				s1_classes.append(x[0])
+			if x[0]._content.payload[0].endswith('2'):
+				f2_classes.append(x[0])
+			if x[0]._content.payload[0].endswith('3'):
+				s2_classes.append(x[0])
+			if x[0]._content.payload[0].endswith('4'):
+				f3_classes.append(x[0])
+			if x[0]._content.payload[0].endswith('5'):
+				s3_classes.append(x[0])
+			if x[0]._content.payload[0].endswith('6'):
+				f4_classes.append(x[0])
+			if x[0]._content.payload[0].endswith('7'):
+				s4_classes.append(x[0])
+
+	print("Already taken: " + str(already_taken))
+	print("Credits taken: " + str(taken_credits))
+	print("Credit hours per semester: " + str(min_credit_hours) + " to " + str(max_credit_hours))
+	print( "f1: " + str(f1_classes))
+	print( "s1: " + str(s1_classes))
+	print( "f2: " + str(f2_classes))
+	print( "s2: " + str(s2_classes))
+	print( "f3: " + str(f3_classes))
+	print( "s3: " + str(s3_classes))
+	print( "f4: " + str(f4_classes))
+	print( "s4: " + str(s4_classes))

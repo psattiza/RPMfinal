@@ -60,11 +60,11 @@ def readCirriculum(filename):
 
 def readSchedule(filename):
     fall = []#
-    valid_falls = []#
+    valid_falls = [-1]#
     spring = []#
-    valid_springs = []#
+    valid_springs = [-1]#
     other = {}#
-    map_semester_to_number = {}#
+    map_semester_to_number = {"previous": -1}#
     try:
         with open(filename) as f:
             reader = csv.reader(f)
@@ -87,6 +87,7 @@ def readSchedule(filename):
                     spring.append(course)
                 else:
                     sems = line[1].split()
+                    sems.append("previous")
                     other[course] = sems
 
             return fall, valid_falls, spring, valid_springs, other, map_semester_to_number
