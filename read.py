@@ -99,9 +99,11 @@ def readStudent(filename):
             reader = csv.reader(f)
             taken = next(reader)
             hours = next(reader)
+            semesters = next(reader)
             min_credit_hours = float(hours[0])
             max_credit_hours = float(hours[1])
-            return taken, min_credit_hours, max_credit_hours
+            remaining_semesters = int(semesters[0])
+            return taken, min_credit_hours, max_credit_hours, remaining_semesters
 
     except IOError:
         print("File: %s, not found" % filename)

@@ -30,12 +30,12 @@ courses, electives = r.readCirriculum(args.cirriculum)
 
 fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.readSchedule(args.schedule)
 
+#Default values
 min_credit_hours = 12.0#6.0
 max_credit_hours = 19.0#10.5
+semesters_remaining = 8
 
-already_taken, min_credit_hours, max_credit_hours = r.readStudent(args.student)
-
-
+already_taken, min_credit_hours, max_credit_hours, semesters_remaining = r.readStudent(args.student)
 
 
 
@@ -103,18 +103,24 @@ other = { #hash table poRealing to array of right semester
 }
 '''
 
-
 all_credit_hours = credit_hours
 for arr in electives:
 	for c in arr[2:]:
 		if c not in all_credit_hours:
 			all_credit_hours[c] = arr[1]
+
+taken_credits = 0
+for t in already_taken:
+        if t in all_credit_hours.keys():
+                taken_credits += all_credit_hours[t]
+
 total_credit_hours = 0
 for c in credit_hours.keys():
 	total_credit_hours += credit_hours[c]
 for e in electives:
 	total_credit_hours += (e[0]*e[1])
 
+credit_hours_remaining = total_credit_hours - taken_credits
 
 
 '''
@@ -140,7 +146,8 @@ for co in electives:
 facts = TRUE()
 
 #Range for classes, only one class per schedule
-num_semesters = [-1, 0, 1, 2, 3, 4, 5, 6, 7]
+#num_semesters = [-1, 0, 1, 2, 3, 4, 5, 6, 7]
+num_semesters = list(range(-1, semesters_remaining))
 always_range = And([Or(Equals(course(c, b), Real(0)), Equals(course(c, b), Real(1))) for c in all_courses for b in num_semesters])
 
 #Required classes need at least one class
@@ -153,7 +160,7 @@ all_semester = And([And(GE(Plus([course(c, b) for c in all_courses]), Real(2)), 
 #based on credit hours
 all_semester_hours = And([And(GE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(min_credit_hours)),
 	LE(Plus([Times(course(c, b), Real(all_credit_hours[c])) for c in all_courses]), Real(max_credit_hours))) for b in num_semesters[1:]])
-
+"""
 #prereqs
 befores = {
 	0: [-1],
@@ -165,6 +172,20 @@ befores = {
 	6: [-1, 0, 1, 2, 3, 4, 5],
 	7: [-1, 0, 1, 2, 3, 4, 5, 6]
 }
+"""
+
+#prereqs
+befores_keys = range(semesters_remaining)
+befores_values = [[] for i in range(semesters_remaining)]
+
+befores_start = 0
+for s in range(len(befores_values)):
+        befores_values[s] = range(-1, befores_start)
+        befores_start += 1
+
+befores = {}
+for i in range(len(befores_keys)):
+        befores[befores_keys[i]] = befores_values[i]
 
 #Can't be on first step, each prereq and coreq created
 prereqs_init = And([(Equals(course(c, 0), Real(0))) for c in prereqs])
@@ -283,6 +304,8 @@ else:
 				s4_classes.append(x[0])
 
 	print("Already taken: " + str(already_taken))
+        print("Credits taken: " + str(taken_credits))
+        print("Credit hours per semester: " + str(min_credit_hours) + " to " + str(max_credit_hours))
 	print( "f1: " + str(f1_classes))
 	print( "s1: " + str(s1_classes))
 	print( "f2: " + str(f2_classes))
