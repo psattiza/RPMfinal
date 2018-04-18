@@ -123,9 +123,17 @@ for c in credit_hours.keys():
 for e in electives:
 	total_credit_hours += (e[0]*e[1])
 
-credit_hours_remaining = total_credit_hours - taken_credits
+credit_hours_remaining = 120 - taken_credits
 
+if (semesters_remaining != 0):
 
+        while ((credit_hours_remaining / semesters_remaining) > max_credit_hours):
+                semesters_remaining += 1
+        
+        while ((credit_hours_remaining / semesters_remaining) < min_credit_hours):
+                semesters_remaining -=1
+else:
+        print("No more semesters needed.");
 
 '''
 map_semester_to_number = {
@@ -251,6 +259,7 @@ model = get_model(facts_domain, solver_name="yices")
 #print model
 if model is None:
 	print("UNSAT")
+        print("Please verify that the student fields are correct.")
     # In isolation they are both fine, rules from both are probably
     # interacting.
     #
