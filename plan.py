@@ -25,23 +25,22 @@ parser.add_argument('--student', metavar='s', type=str, default="student.csv",
 args = parser.parse_args()
 
 #print(args)
+
+#Default values
+min_credit_hours = 6.0
+max_credit_hours = 10.5
+semesters_remaining = 8
+
+
 every_course, credit_hours, prereqs, coreqs = r.readPreCoReq(args.courses)
 courses, electives = r.readCirriculum(args.cirriculum)
 
 fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.readSchedule(args.schedule)
 
-#Default values
-min_credit_hours = 12.0#6.0
-max_credit_hours = 19.0#10.5
-semesters_remaining = 8
-
 already_taken, min_credit_hours, max_credit_hours, semesters_remaining = r.readStudent(args.student)
 
-
-
-
-
 '''
+already_taken = []
 courses = ["epic151", "ebgn201", "math111", "csci101",
  "csm101", "math112", "phgn100", "csci261", "csci262", "math201",
  "math213", "csci341", "phgn200", "chgn121", "csci403",
@@ -103,7 +102,22 @@ other = { #hash table poRealing to array of right semester
 	"csci440": ["f2", "f3", "s4"],
 	"csci446": ["s1", "s4"]
 }
+
+valid_falls=[0, 2, 4, 6]
+valid_springs=[1, 3, 5, 7]
+
+map_semester_to_number = {
+	"f1": 0,
+	"s1": 1,
+	"f2": 2,
+	"s2": 3,
+	"f3": 4,
+	"s3": 5,
+	"f4": 6,
+	"s4": 7
+}
 '''
+
 
 
 all_credit_hours = credit_hours
@@ -118,12 +132,13 @@ for t in already_taken:
 		taken_credits += all_credit_hours[t]
 
 total_credit_hours = 0
-for c in credit_hours.keys():
+for c in courses:
 	total_credit_hours += credit_hours[c]
 for e in electives:
 	total_credit_hours += (e[0]*e[1])
 
-credit_hours_remaining = 120 - taken_credits
+credit_hours_remaining = total_credit_hours - taken_credits
+
 
 if (semesters_remaining != 0):
 
@@ -134,19 +149,6 @@ if (semesters_remaining != 0):
                 semesters_remaining -=1
 else:
         print("No more semesters needed.");
-
-'''
-map_semester_to_number = {
-	"f1": 0,
-	"s1": 1,
-	"f2": 2,
-	"s2": 3,
-	"f3": 4,
-	"s3": 5,
-	"f4": 6,
-	"s4": 7
-}
-'''
 
 all_courses = []
 for c in courses:
@@ -208,10 +210,6 @@ restrict_electives = And([And([LE(Plus([course(c, b) for b in num_semesters]), R
 
 #Scheduling constraints
 csm101 = Or(Equals(course("CSM101", 0), Real(1)),  Equals(course("CSM101", -1), Real(1)))
-'''
-valid_falls=[0, 2, 4, 6]
-valid_springs=[1, 3, 5, 7]
-'''
 fall_courses = And([And([Equals(course(c, b), Real(1)).Implies(Or([Equals(Real(b), Real(f))
 	for f in valid_falls])) for b in num_semesters]) for c in fall])
 
