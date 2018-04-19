@@ -14,14 +14,16 @@ def course (name, semester):
 
 
 parser = argparse.ArgumentParser(description='Course planning with some help from pySMT')
-parser.add_argument('--curriculum', metavar='cir', type=str, default="curriculum.csv",
-                    help='specifies filepath to cirriculum csv file, default "curriculum.csv"')
+parser.add_argument('--curriculum', metavar='cur', type=str, default="curriculum.csv",
+                    help='filepath to curriculum csv file, default "curriculum.csv"')
 parser.add_argument('--courses', metavar='c', type=str, default="courses.csv",
-                    help='specifies filepath to courses csv file, default "courses.csv"')
+                    help='filepath to courses csv file, default "courses.csv"')
 parser.add_argument('--schedule', metavar='s', type=str, default="schedule.csv",
-                    help='specifies filepath to class shedule csv file, default "schedule.csv"')
+                    help='filepath to class shedule csv file, default "schedule.csv"')
 parser.add_argument('--student', metavar='std', type=str, default="student.csv",
-                    help='specifies filepath to student csv file, default student.csv')
+                    help='filepath to student csv file, default student.csv')
+parser.add_argument('--solver', metavar='slv', type=str, default="yices",
+                    help='solver to use, default yices')
 args = parser.parse_args()
 
 #print(args)
@@ -33,7 +35,7 @@ semesters_remaining = 8
 
 
 every_course, credit_hours, prereqs, coreqs = r.readPreCoReq(args.courses)
-courses, electives = r.readCirriculum(args.cirriculum)
+courses, electives = r.readCurriculum(args.curriculum)
 
 fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = r.readSchedule(args.schedule)
 
@@ -251,7 +253,7 @@ facts_domain = And(facts,
 )
 
 print("Generate model")
-model = get_model(facts_domain, solver_name="yices")
+model = get_model(facts_domain, solver_name=args.solver)
 
 #print model
 if model is None:

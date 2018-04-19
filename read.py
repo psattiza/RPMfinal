@@ -31,7 +31,7 @@ def readPreCoReq(filename):
     except IOError:
         print("File: %s, not found" % filename)
 
-def readCirriculum(filename):
+def readCurriculum(filename):
     required = []
     electives = []
     try:
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     #fall, valid_falls, spring, valid_springs, other, map_semester_to_number  = readSchedule("schedule.csv")
     #print("Fall: {}".format(fall))
     #print("Other: {}".format(other))
-    #print(readCirriculum("cirriculum.csv"))
+    #print(readCurriculum("curriculum.csv"))
     courses, creditHours, prereqs, coreqs =readPreCoReq("courses.csv")
     print(prereqs)
     print(coreqs)
