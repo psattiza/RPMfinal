@@ -27,6 +27,17 @@ def readPreCoReq(filename):
                 except IndexError:
                     print("Line #{} not formatted like [title,numCredits (float), numPrereqs,..., numCoReqs, ...] make sure you include zeros".format(line))
                     return 0
+	    for course in prereqs:
+		po = []
+		for prereq in prereqs[course]:
+	  	    po.append(prereq.split(" "))
+		prereqs[course] = po
+	    for course in coreqs:
+		co = []
+		for coreq in coreqs[course]:
+	  	    co.append(coreq.split(" "))
+		coreqs[course] = co
+	
             return courses, creditHours, prereqs, coreqs
     except IOError:
         print("File: %s, not found" % filename)
@@ -115,5 +126,5 @@ if __name__ == '__main__':
     #print("Fall: {}".format(fall))
     #print("Other: {}".format(other))
     #print(readCirriculum("cirriculum.csv"))
-	#print(readPreCoReq("constraints.csv"))
-	print(readStudent("student.csv"))
+	print(readPreCoReq("courses.csv"))
+	#print(readStudent("student.csv"))

@@ -70,30 +70,30 @@ credit_hours = {
 	"csci306": 3,
 }
 prereqs = {
-   "math112": ["math111"],
-   "phgn100": ["math111"],
-   "math201": ["math112"],
-   "csci262": ["csci261"],
-   "math213": ["math112"],
-   "csci404": ["csci262", "math201"],
-   "csci341": ["csci261"],
-   "phgn200": ["phgn100"],
-   "chgn122": ["chgn121"],
-   "chgn125": ["chgn125"],
-   "csci440": ["csci341", "csci261"],
-   "csci445": ["csci262"],
-   "csci446": ["csci445"],
-   "csci400": ["csci306"],
-   "csci403": ["csci262"],
-   "csci306": ["csci262"]
+   "math112": [["math111"]],
+   "phgn100": [["math111"]],
+   "math201": [["math112"]],
+   "csci262": [["csci261"]],
+   "math213": [["math112"]],
+   "csci404": [["csci262"], ["math201"]],
+   "csci341": [["csci261"]],
+   "phgn200": [["phgn100"]],
+   "chgn122": [["chgn121"]],
+   "chgn125": [["chgn125"]],
+   "csci440": [["csci341"], ["csci261"]],
+   "csci445": [["csci262"]],
+   "csci446": [["csci445"]],
+   "csci400": [["csci306"]],
+   "csci403": [["csci262"]],
+   "csci306": [["csci262"]]
 }
 
 coreqs = {
-    "phgn100": ["math112"],
-	"csci341": ["csci262"],
-	"phgn200": ["math213"],
-	"csci445": ["csci403"],
-	"csci446": ["csci400"]
+    "phgn100": [["math112"]],
+	"csci341": [["csci262"]],
+	"phgn200": [["math213"]],
+	"csci445": [["csci403"]],
+	"csci446": [["csci400"]]
 }
 
 fall = ["csci445"] #list of fall
@@ -187,12 +187,11 @@ befores = {}
 for i in range(len(befores_keys)):
 	befores[befores_keys[i]] = befores_values[i]
 #Can't be on first step, each prereq and coreq created
-prereqs_init = And([(Equals(course(c, 0), Real(0))) for c in prereqs])
-prereqs_only = And([And([Equals(course(c, b), Real(1)).Implies(And([Equals(Plus([course(cp, be) for be in befores[b]]), Real(1)) for cp in prereqs[c]]))
- 	for b in num_semesters[1:]]) for c in prereqs])
+prereqs_only = And([And([Equals(course(c, b), Real(1)).Implies(And([Or([Equals(Plus([course(cp, be) for be in befores[b]]), Real(1)) for cp in cpp]) for cpp in prereqs[c]]))
+ 	for b in num_semesters[1:]]) for c in prereqs.keys()])
 
 coreqs_only = And([And([Equals(course(c, b), Real(1)).Implies(
-(And([Or(Equals(course(cc, b), Real(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Real(1)))) for cc in coreqs[c]])) )
+(And([Or([Or(Equals(course(cc, b), Real(1)), (Equals(Plus([course(cc, bef) for bef in befores[b]]), Real(1)))) for cc in ccc]) for ccc in coreqs[c]])) )
 for b in num_semesters[1:]]) for c in coreqs])
 
 #already taken
@@ -228,7 +227,7 @@ facts_domain = And(facts,
 
 		 all_classes,
 
-		 prereqs_init,
+		 #prereqs_init,
 
 		 prereqs_only,
 
