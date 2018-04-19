@@ -14,13 +14,13 @@ def course (name, semester):
 
 
 parser = argparse.ArgumentParser(description='Course planning with some help from pySMT')
-parser.add_argument('--cirriculum', metavar='cir', type=str, default="cirriculum.csv",
-                    help='specifies filepath to cirriculum csv file, default "cirriculum.csv"')
+parser.add_argument('--curriculum', metavar='cir', type=str, default="curriculum.csv",
+                    help='specifies filepath to cirriculum csv file, default "curriculum.csv"')
 parser.add_argument('--courses', metavar='c', type=str, default="courses.csv",
                     help='specifies filepath to courses csv file, default "courses.csv"')
 parser.add_argument('--schedule', metavar='s', type=str, default="schedule.csv",
                     help='specifies filepath to class shedule csv file, default "schedule.csv"')
-parser.add_argument('--student', metavar='s', type=str, default="student.csv",
+parser.add_argument('--student', metavar='std', type=str, default="student.csv",
                     help='specifies filepath to student csv file, default student.csv')
 args = parser.parse_args()
 
@@ -144,7 +144,7 @@ if (semesters_remaining != 0):
 
         while ((credit_hours_remaining / semesters_remaining) > max_credit_hours):
                 semesters_remaining += 1
-        
+
         while ((credit_hours_remaining / semesters_remaining) < min_credit_hours):
                 semesters_remaining -=1
 else:
