@@ -255,8 +255,8 @@ model = get_model(facts_domain, solver_name="yices")
 
 #print model
 if model is None:
-	print("UNSAT")
-        print("Please verify that the student fields are correct.")
+    print("UNSAT")
+    print("Please verify that the student fields are correct.")
     # In isolation they are both fine, rules from both are probably
     # interacting.
     #
@@ -264,12 +264,12 @@ if model is None:
     # conjunctive_partition can be used to obtain a "flat"
     # structure, i.e., a list of conjuncts.
     #
-	from pysmt.rewritings import conjunctive_partition
-	conj = conjunctive_partition(facts_domain)
-	ucore = get_unsat_core(conj)
-	print("UNSAT-Core size '%d'" % len(ucore))
-	for f in ucore:
-		print(f.serialize())
+    from pysmt.rewritings import conjunctive_partition
+    conj = conjunctive_partition(facts_domain)
+    ucore = get_unsat_core(conj)
+    print("UNSAT-Core size '%d'" % len(ucore))
+    for f in ucore:
+    	print(f.serialize())
 else:
 	f1_classes = []
 	s1_classes = []
