@@ -19,3 +19,9 @@ To run:
     $ python plan.py
            or
     $ python3 plan.py
+
+Student config file: student.csv
+	Line 1: Previously taken courses
+	Line 2: Minimum desired credits per semester,
+	     	Maximum desired credits per semester
+	Line 3: Remainng semesters until graduation
